@@ -1,4 +1,4 @@
-// Every feature, ONE line each: importing it runs its index.ts, which registers its pages, card parts, admin tabs
+// import "./ziki_issue_scout"; // removed invalid import
 // and profile sections (src/features/registry.ts). Copy src/features/_template to start a feature.
 import "./private_tournaments";
 import "./follows";

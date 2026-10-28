@@ -10,8 +10,9 @@ import { hostOf, indiePath } from "./indie";
 import { PAGES, setSeo } from "./seo";
 import { withHandle } from "./share";
 import { analytics } from "./analytics";
-import { NotFoundSection } from "./NotFound";
+import CreatorRobotArt from "./CreatorRobotArt";
 import { SkeletonCards } from "./Skeleton";
+import { NotFoundSection } from "./NotFound";
 
 // Games by independent creators: made and hosted outside start.ng. The homepage shows the newest 4
 // under a banner; /creators shows them all. Cards open the game's own page on start.ng
@@ -78,52 +79,22 @@ type FavProps = { user: User | null; has: (key: string) => boolean; toggle: (key
 type RobotExercise = "stretch" | "dance" | "hop" | "curious" | "wave" | "yawn" | "shuffle";
 const ROBOT_EXERCISES: RobotExercise[] = ["stretch", "dance", "hop", "curious", "wave", "yawn", "shuffle"];
 
-function CreatorRobotArt({ idle, className = "" }: { idle: RobotExercise | null; className?: string }) {
-  return (
-    <svg className={`creator-robot ${className}`} data-idle={idle ?? undefined} viewBox="0 0 100 120" aria-hidden="true" focusable="false">
-      <path className="creator-robot-antenna" d="M50 17V9m0 3 8-5" />
-      <circle className="creator-robot-spark" cx="60" cy="6" r="3" />
-      <path className="creator-robot-ear" d="M17 33h-5v12h6m65-12h5v12h-6" />
-      <g className="creator-robot-head">
-        <rect className="creator-robot-head-shell" x="18" y="16" width="64" height="53" rx="21" />
-        <rect className="creator-robot-face" x="25" y="27" width="50" height="31" rx="13" />
-        <ellipse className="creator-robot-eye-socket" cx="39" cy="42" rx="6.5" ry="8" />
-        <ellipse className="creator-robot-eye-socket" cx="61" cy="42" rx="6.5" ry="8" />
-        <circle className="creator-robot-pupil" cx="40" cy="42" r="3.3" />
-        <circle className="creator-robot-pupil" cx="62" cy="42" r="3.3" />
-        <circle className="creator-robot-eye-glint" cx="39" cy="40" r="1.15" />
-        <circle className="creator-robot-eye-glint" cx="61" cy="40" r="1.15" />
-        <path className="creator-robot-mouth" d="M46 52q4 4 8 0" />
-      </g>
-      <path className="creator-robot-arm creator-robot-arm-left" d="M32 77q-9 3-12 13" />
-      <path className="creator-robot-arm creator-robot-arm-right" d="M68 77q9 3 12 13" />
-      <circle className="creator-robot-hand" cx="20" cy="91" r="4" />
-      <circle className="creator-robot-hand" cx="80" cy="91" r="4" />
-      <rect className="creator-robot-body" x="30" y="69" width="40" height="34" rx="12" />
-      <rect className="creator-robot-body-panel" x="40" y="78" width="20" height="14" rx="5" />
-      <circle className="creator-robot-body-light" cx="50" cy="85" r="3" />
-      <path className="creator-robot-leg creator-robot-leg-left" d="M41 101v8" />
-      <path className="creator-robot-leg creator-robot-leg-right" d="M59 101v8" />
-      <path className="creator-robot-foot" d="M34 111h13q0 5-6 5h-7q-3 0-3-2t3-3Zm19 0h13q3 1 3 3t-3 2h-7q-6 0-6-5Z" />
-      <ellipse className="creator-robot-shadow" cx="50" cy="118" rx="25" ry="2" />
-    </svg>
-  );
-}
+
 
 function CreatorCompanion({
-  active, idle, onCreate, onIdleChange,
+  idle, onCreate, onIdleChange,
 }: {
-  active: boolean;
   idle: RobotExercise | null;
   onCreate: () => void;
   onIdleChange: (exercise: RobotExercise | null) => void;
 }) {
   const [promptVisible, setPromptVisible] = useState(false);
   const [dismissed, setDismissed] = useState(false);
+  const [motionPaused, setMotionPaused] = useState(false);
   const promptShown = useRef(false);
 
   useEffect(() => {
-    if (!active || dismissed || promptShown.current) return;
+    if (dismissed || promptShown.current) return;
     let timer: number | undefined;
     const clearTimer = () => {
       if (timer !== undefined) window.clearTimeout(timer);
@@ -154,15 +125,11 @@ function CreatorCompanion({
       window.removeEventListener("pagehide", onPageHide);
       window.removeEventListener("pageshow", onPageShow);
     };
-  }, [active, dismissed]);
+  }, [dismissed]);
 
   useEffect(() => {
-    if (!active) {
-      onIdleChange(null);
-      return;
-    }
-
     const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
+    setMotionPaused(document.visibilityState !== "visible" || reducedMotion.matches);
     let timer: number | undefined;
     let previousExercise: RobotExercise | null = null;
     let lastActivityReset = 0;
@@ -172,7 +139,7 @@ function CreatorCompanion({
       if (timer !== undefined) window.clearTimeout(timer);
       timer = undefined;
     };
-    const schedule = (delay = 5500 + Math.random() * 3500) => {
+    const schedule = (delay = 8000 + Math.random() * 4000) => {
       if (timer !== undefined || document.visibilityState !== "visible" || reducedMotion.matches) return;
       timer = window.setTimeout(() => {
         timer = undefined;
@@ -197,20 +164,27 @@ function CreatorCompanion({
         currentExercise = null;
         onIdleChange(null);
       }
-      schedule(6500);
+      schedule(8000 + Math.random() * 4000);
     };
     const pause = () => {
       clearTimer();
       currentExercise = null;
+      setMotionPaused(true);
       onIdleChange(null);
     };
     const onVisibilityChange = () => {
       if (document.visibilityState === "hidden") pause();
-      else schedule();
+      else {
+        setMotionPaused(reducedMotion.matches);
+        schedule();
+      }
     };
     const onMotionPreferenceChange = () => {
       if (reducedMotion.matches) pause();
-      else schedule();
+      else {
+        setMotionPaused(document.visibilityState !== "visible");
+        schedule();
+      }
     };
     const activityEvents: Array<keyof WindowEventMap> = ["pointermove", "pointerdown", "wheel", "keydown", "click", "touchstart", "scroll"];
 
@@ -228,10 +202,9 @@ function CreatorCompanion({
       window.removeEventListener("pageshow", onVisibilityChange);
       reducedMotion.removeEventListener("change", onMotionPreferenceChange);
     };
-  }, [active, onIdleChange]);
+  }, [onIdleChange]);
 
   useEffect(() => {
-    if (!active) return;
     const moveEyes = (event: PointerEvent) => {
       document.querySelectorAll<SVGSVGElement>(".creators-page .creator-robot").forEach((robot) => {
         const bounds = robot.getBoundingClientRect();
@@ -244,8 +217,12 @@ function CreatorCompanion({
       });
     };
     window.addEventListener("pointermove", moveEyes, { passive: true });
-    return () => window.removeEventListener("pointermove", moveEyes);
-  }, [active]);
+    window.addEventListener("pointerdown", moveEyes, { passive: true });
+    return () => {
+      window.removeEventListener("pointermove", moveEyes);
+      window.removeEventListener("pointerdown", moveEyes);
+    };
+  }, []);
 
   return (
     <aside className={`creator-companion${promptVisible && !dismissed ? " has-prompt" : ""}`} aria-label="Game creation companion">
@@ -254,11 +231,11 @@ function CreatorCompanion({
           <button type="button" className="creator-companion-dismiss" aria-label="Dismiss game creation suggestion" onClick={() => setDismissed(true)}>
             <span aria-hidden="true">×</span>
           </button>
-          <p>Hmm… no game catching your eye? 👀 Why not make one?</p>
+          <p>Not finding a game you like? Create your own!</p>
           <button type="button" className="creator-companion-action" onClick={onCreate}>Create a game</button>
         </div>
       )}
-      <CreatorRobotArt idle={idle} className="creator-companion-robot" />
+      <CreatorRobotArt idle={idle} className={`creator-companion-robot${motionPaused ? " is-paused" : ""}`} />
     </aside>
   );
 }
@@ -534,7 +511,6 @@ export function CreatorsPage({ user, onSignIn }: { user: User | null; onSignIn: 
       </div>
       <Pagination page={current} pages={pages} onPage={goToPage} hrefFor={(n) => urlFor("/creators", q, n)} />
       <CreatorCompanion
-        active={loaded && !loadError}
         idle={robotIdle}
         onCreate={startSubmit}
         onIdleChange={setRobotIdle}

@@ -7,6 +7,7 @@ import ProfileSections from "../ProfileSections";
 import { changeUsername, checkUsername } from "../../api";
 import { badgeCatalog, getProfile, getProfileByUsername, myProfile, saveSettings, type Badge, type Profile, type Settings } from "./api";
 import "./profiles.css";
+import LampWithFlower from "../../components/LampWithFlower";
 
 const Viewer = lazy(() => import("../../three/Viewer"));
 const MyGames = lazy(() => import("../../MyGames"));
@@ -121,7 +122,12 @@ export default function ProfilePage({ user, onSignIn, params }: PageProps) {
       )}
       <header className="profile-hero">
         <div className="profile-stage">
-          <Suspense fallback={null}><Viewer style={look} className="profile-viewer" /></Suspense>
+          <div className="profile-viewer-slot">
+            <Suspense fallback={null}>
+              <Viewer style={look} className="profile-viewer" />
+            </Suspense>
+          </div>
+          <LampWithFlower />
         </div>
         <div className="profile-who">
           <span className="profile-level">Level {p.level}</span>

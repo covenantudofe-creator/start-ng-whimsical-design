@@ -28,6 +28,7 @@ import PageParts from "./features/PageParts";
 import { useFeature } from "./features/flags";
 import { LeaderboardPage, TournamentBanner, TournamentPage, useTournament } from "./Tournament";
 import { ABOUT, QUESTIONS } from "./home-copy";
+import LampWithFlower from "./components/LampWithFlower";
 
 // Set when a game sent the user here to sign in: we send them back afterwards.
 const returnTo = gameReturnUrl();
@@ -414,7 +415,12 @@ export default function App({ view = "home", gameName, indieId, featurePage }: {
         {(view === "home" || allGames) && (
         <section id="games" className={allGames ? "container all-games" : "container"}>
           <div className="section-head">
-            {allGames ? <h1>All games from the community</h1> : (
+            {allGames ? (
+              <div className="all-games-title">
+                <h1>All games from the community</h1>
+                <LampWithFlower />
+              </div>
+            ) : (
               <div>
                 <h2>Games from the community</h2>
                 {popular.some((g) => g.plays > 0) && <p className="most-played"><span className="tag">Most played</span> What everyone's playing this week</p>}

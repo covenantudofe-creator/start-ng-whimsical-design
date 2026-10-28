@@ -1,0 +1,51 @@
+.lamp-button {
+  position: relative;
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 68px;
+  height: 76px;
+  padding: 4px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--card);
+  color: var(--ink);
+  box-shadow: 3px 3px 0 var(--lime);
+  cursor: pointer;
+}
+.lamp-button:hover { background: var(--card); border-color: var(--ink); }
+.lamp-button:focus-visible { outline: 3px solid var(--ink); outline-offset: 3px; }
+.lamp { display: block; width: 60px; height: 60px; overflow: visible; }
+.lamp-shade { fill: var(--muted); stroke: var(--ink); stroke-width: 2; stroke-linejoin: round; }
+.lamp-face { fill: var(--card); stroke: var(--ink); stroke-width: 2; }
+.lamp-eye { fill: var(--bg); stroke: var(--ink); stroke-width: 1.5; }
+.lamp-pupil { fill: var(--ink); transition: transform 110ms ease-out; }
+.lamp-neck { fill: none; stroke: var(--ink); stroke-width: 3; stroke-linecap: round; }
+.lamp-base { fill: var(--lime); stroke: var(--ink); stroke-width: 2; stroke-linejoin: round; }
+.lamp-flower {
+  position: absolute;
+  z-index: 1;
+  top: -12px;
+  left: 50%;
+  width: 36px;
+  height: 44px;
+  overflow: visible;
+  pointer-events: none;
+  animation: lamp-flower-drift 2.4s ease-in both;
+}
+.flower-stem, .flower-leaf { fill: none; stroke: var(--ok); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.flower-petals circle { fill: var(--lime); stroke: var(--ink); stroke-width: 1.2; }
+.flower-petals .flower-center { fill: var(--on-lime); }
+@keyframes lamp-flower-drift {
+  0% { opacity: 0; transform: translate(-50%, 12px) scale(.2); }
+  18% { opacity: 1; transform: translate(-50%, -10px) scale(1); }
+  30% { transform: translate(calc(-50% - 3px), -13px) rotate(-5deg); }
+  42% { transform: translate(calc(-50% + 2px), -12px) rotate(4deg); }
+  54% { transform: translate(calc(-50% - 2px), -13px) rotate(-3deg); }
+  66% { transform: translate(-50%, -11px) rotate(2deg); }
+  100% { opacity: 0; transform: translate(calc(-50% + 15px), 38px) rotate(65deg) scale(.8); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .lamp-pupil { transition: none; }
+  .lamp-flower { animation: none; }
+}

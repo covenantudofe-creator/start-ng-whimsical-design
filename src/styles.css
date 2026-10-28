@@ -481,6 +481,55 @@ button.game-link:hover { background: none; }
 .creators-intro { display: flex; gap: 16px; align-items: center; justify-content: space-between; flex-wrap: wrap; margin: -6px 0 26px; }
 .creators-intro p { margin: 0; color: var(--muted); line-height: 1.6; max-width: 56ch; }
 .creators-page .empty button.link { font-weight: 600; color: var(--ink); font-size: inherit; }
+.creators-empty { display: flex; align-items: center; justify-content: center; gap: 24px; padding: 28px 24px; text-align: left; }
+.creators-empty-copy { max-width: 420px; }
+.creators-empty-copy h2 { margin: 0 0 8px; font-size: 1.35rem; letter-spacing: -.025em; }
+.creators-empty-copy p { margin: 0 0 16px; color: var(--muted); line-height: 1.6; }
+.creators-load-error { text-align: center; }
+.creators-load-error .link { margin-left: 4px; }
+.creator-robot { display: block; flex: none; width: 104px; height: 125px; overflow: visible; filter: drop-shadow(0 5px 3px var(--dot)); }
+.creator-robot-antenna, .creator-robot-ear, .creator-robot-arm, .creator-robot-leg { fill: none; stroke: var(--ink); stroke-width: 4; stroke-linecap: round; stroke-linejoin: round; }
+.creator-robot-spark { fill: var(--lime); stroke: var(--ink); stroke-width: 1.5; }
+.creator-robot-head-shell { fill: var(--card); stroke: var(--ink); stroke-width: 2.5; }
+.creator-robot-face { fill: var(--banner-tint); stroke: var(--line); stroke-width: 1; }
+.creator-robot-eye-socket { fill: var(--ink); }
+.creator-robot-pupil { fill: var(--lime); filter: drop-shadow(0 0 2px var(--lime)); transform: translate(var(--gaze-x, 0px), var(--gaze-y, 0px)); transition: transform .18s ease-out; }
+.creator-robot-eye-glint { fill: var(--card); }
+.creator-robot-head { transform-box: fill-box; transform-origin: center; transform: rotate(var(--head-tilt, 0deg)); transition: transform .2s ease-out; }
+.creator-robot-mouth { fill: none; stroke: var(--ink); stroke-width: 2; stroke-linecap: round; transform-box: fill-box; transform-origin: center; }
+.creator-robot-hand { fill: var(--card); stroke: var(--ink); stroke-width: 2.5; }
+.creator-robot-body { fill: var(--card); stroke: var(--ink); stroke-width: 2.5; }
+.creator-robot-body-panel { fill: var(--lime); stroke: var(--ink); stroke-width: 1.5; }
+.creator-robot-body-light { fill: var(--ink); }
+.creator-robot-foot { fill: var(--card); stroke: var(--ink); stroke-width: 2; stroke-linejoin: round; }
+.creator-robot-shadow { fill: var(--dot); }
+.creator-companion { position: fixed; right: 20px; bottom: calc(86px + env(safe-area-inset-bottom, 0px)); z-index: 6; display: flex; align-items: flex-end; gap: 12px; width: auto; pointer-events: none; }
+.creator-companion.has-prompt { width: min(475px, calc(100vw - 40px)); }
+.creator-companion .creator-robot { width: 104px; height: 125px; }
+.creator-companion-bubble { position: relative; flex: 1; min-width: 0; margin-bottom: 12px; padding: 16px; border: 1px solid var(--line); border-radius: 16px 16px 4px 16px; background: var(--card); box-shadow: 4px 4px 0 var(--lime); pointer-events: auto; animation: creator-companion-peek .32s ease-out both; }
+.creator-companion-bubble p { margin: 0 22px 12px 0; font-size: .95rem; line-height: 1.45; }
+.creator-companion-dismiss { position: absolute; top: 6px; right: 6px; width: 30px; height: 30px; padding: 0; border-radius: 50%; background: transparent; color: var(--muted); font-size: 1.2rem; line-height: 1; }
+.creator-companion-dismiss:hover { background: var(--bg); color: var(--ink); }
+.creator-companion-action { padding: 9px 14px; border-radius: 8px; font-size: .9rem; }
+@keyframes creator-companion-peek { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes creator-robot-stretch { 0%, 100% { transform: rotate(0); } 35%, 75% { transform: rotate(-48deg); } }
+@keyframes creator-robot-wave { 0%, 100% { transform: rotate(0); } 30%, 65% { transform: rotate(48deg); } }
+@keyframes creator-robot-hop { 0%, 100% { transform: translateY(0); } 35%, 70% { transform: translateY(-10px); } }
+@keyframes creator-robot-dance { 0%, 100% { transform: translateY(0) rotate(0); } 25%, 75% { transform: translateY(-5px) rotate(-5deg); } 50% { transform: translateY(0) rotate(5deg); } }
+@keyframes creator-robot-curious { 0%, 100% { transform: rotate(var(--head-tilt, 0deg)); } 40%, 70% { transform: rotate(-12deg); } }
+@keyframes creator-robot-yawn { 0%, 100% { transform: scaleY(1); } 30%, 75% { transform: scaleY(2.2); } }
+@keyframes creator-robot-shuffle { 0%, 100% { transform: rotate(0); } 35% { transform: rotate(-12deg); } 70% { transform: rotate(12deg); } }
+.creator-robot[data-idle="stretch"] .creator-robot-arm-left { transform-box: fill-box; transform-origin: right center; animation: creator-robot-stretch 2s ease-in-out; }
+.creator-robot[data-idle="stretch"] .creator-robot-arm-right { transform-box: fill-box; transform-origin: left center; animation: creator-robot-wave 2s ease-in-out; }
+.creator-robot[data-idle="dance"] { transform-origin: 50% 85%; animation: creator-robot-dance 2s ease-in-out; }
+.creator-robot[data-idle="hop"] { animation: creator-robot-hop 1.2s ease-in-out; }
+.creator-robot[data-idle="curious"] .creator-robot-head { animation: creator-robot-curious 1.8s ease-in-out; }
+.creator-robot[data-idle="wave"] .creator-robot-arm-right { transform-box: fill-box; transform-origin: left center; animation: creator-robot-wave 1.8s ease-in-out; }
+.creator-robot[data-idle="yawn"] .creator-robot-mouth { animation: creator-robot-yawn 1.8s ease-in-out; }
+.creator-robot[data-idle="yawn"] .creator-robot-eye-socket { transform-box: fill-box; transform-origin: center; animation: creator-robot-yawn 1.8s ease-in-out; }
+.creator-robot[data-idle="shuffle"] .creator-robot-leg-left { transform-box: fill-box; transform-origin: top center; animation: creator-robot-shuffle .7s ease-in-out 2; }
+.creator-robot[data-idle="shuffle"] .creator-robot-leg-right { transform-box: fill-box; transform-origin: top center; animation: creator-robot-shuffle .7s ease-in-out 2 reverse; }
+.creator-robot:focus-visible, .creator-companion button:focus-visible { outline: 3px solid var(--ink); outline-offset: 3px; }
 .indie-details { max-width: 520px; }
 .indie-details-art { border-radius: 12px; background: var(--line); }
 .indie-tag { justify-self: start; text-transform: none; letter-spacing: .02em; }
@@ -511,6 +560,19 @@ textarea:focus { outline: 2px solid var(--ink); outline-offset: -1px; }
   .indie-banner::after { background: linear-gradient(180deg, var(--card) 45%, color-mix(in srgb, var(--card) 40%, transparent) 75%, transparent); }
   /* The tiles are sized from the art's width, so its height must follow its width too: a fixed height let them grow over the buttons above. */
   .indie-banner-art { height: auto; aspect-ratio: 2 / 1; min-height: 170px; width: 100%; max-width: 520px; margin: 6px auto 0; }
+}
+@media (max-width: 600px) {
+  .creators-empty { flex-direction: column; gap: 8px; padding: 20px 16px; text-align: center; }
+  .creators-empty-copy h2 { font-size: 1.2rem; }
+  .creators-empty-copy .btn { width: 100%; }
+  .creator-companion { right: 12px; bottom: calc(72px + env(safe-area-inset-bottom, 0px)); gap: 6px; width: min(420px, calc(100vw - 48px)); }
+  .creator-companion:not(.has-prompt) { width: auto; }
+  .creator-companion .creator-robot { width: 82px; height: 98px; }
+  .creator-companion-bubble { margin-bottom: 8px; padding: 12px; }
+  .creator-companion-bubble p { font-size: .88rem; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .creator-companion-bubble, .creator-robot, .creator-robot * { animation: none !important; transition: none !important; }
 }
 
 /* most played */

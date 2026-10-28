@@ -55,9 +55,12 @@ function useDialog(onClose: () => void): RefObject<HTMLDivElement> {
 
 function useIndieGames(user: User | null, limit?: number, sort: "newest" | "popular" = "newest") {
   const [games, setGames] = useState<IndieGame[] | null>(null);
-  const [loaded, setLoaded] = useState(false); // the API has answered at least once (games is [] after a failure too)
+  const [loaded, setLoaded] = useState(false);
+  const [loadError, setLoadError] = useState(false);
   const refresh = useCallback(() => {
-    listIndieGames(token(), limit, sort).then((g) => { setGames(g); setLoaded(true); }).catch(() => setGames((g) => g ?? []));
+    listIndieGames(token(), limit, sort)
+      .then((g) => { setGames(g); setLoaded(true); setLoadError(false); })
+      .catch(() => { setLoadError(true); setGames((g) => g ?? []); });
   }, [limit, sort, user?.id]); // eslint-disable-line react-hooks/exhaustive-deps
   // On load, every 30 seconds and when you come back to the tab, so the most clicked keeps up.
   useEffect(() => {
@@ -67,10 +70,198 @@ function useIndieGames(user: User | null, limit?: number, sort: "newest" | "popu
     document.addEventListener("visibilitychange", onVisible);
     return () => { window.clearInterval(timer); document.removeEventListener("visibilitychange", onVisible); };
   }, [refresh]);
-  return { games, setGames, refresh, loaded };
+  return { games, setGames, refresh, loaded, loadError };
 }
 
 type FavProps = { user: User | null; has: (key: string) => boolean; toggle: (key: string) => void; onSignIn: () => void };
+
+type RobotExercise = "stretch" | "dance" | "hop" | "curious" | "wave" | "yawn" | "shuffle";
+const ROBOT_EXERCISES: RobotExercise[] = ["stretch", "dance", "hop", "curious", "wave", "yawn", "shuffle"];
+
+function CreatorRobotArt({ idle, className = "" }: { idle: RobotExercise | null; className?: string }) {
+  return (
+    <svg className={`creator-robot ${className}`} data-idle={idle ?? undefined} viewBox="0 0 100 120" aria-hidden="true" focusable="false">
+      <path className="creator-robot-antenna" d="M50 17V9m0 3 8-5" />
+      <circle className="creator-robot-spark" cx="60" cy="6" r="3" />
+      <path className="creator-robot-ear" d="M17 33h-5v12h6m65-12h5v12h-6" />
+      <g className="creator-robot-head">
+        <rect className="creator-robot-head-shell" x="18" y="16" width="64" height="53" rx="21" />
+        <rect className="creator-robot-face" x="25" y="27" width="50" height="31" rx="13" />
+        <ellipse className="creator-robot-eye-socket" cx="39" cy="42" rx="6.5" ry="8" />
+        <ellipse className="creator-robot-eye-socket" cx="61" cy="42" rx="6.5" ry="8" />
+        <circle className="creator-robot-pupil" cx="40" cy="42" r="3.3" />
+        <circle className="creator-robot-pupil" cx="62" cy="42" r="3.3" />
+        <circle className="creator-robot-eye-glint" cx="39" cy="40" r="1.15" />
+        <circle className="creator-robot-eye-glint" cx="61" cy="40" r="1.15" />
+        <path className="creator-robot-mouth" d="M46 52q4 4 8 0" />
+      </g>
+      <path className="creator-robot-arm creator-robot-arm-left" d="M32 77q-9 3-12 13" />
+      <path className="creator-robot-arm creator-robot-arm-right" d="M68 77q9 3 12 13" />
+      <circle className="creator-robot-hand" cx="20" cy="91" r="4" />
+      <circle className="creator-robot-hand" cx="80" cy="91" r="4" />
+      <rect className="creator-robot-body" x="30" y="69" width="40" height="34" rx="12" />
+      <rect className="creator-robot-body-panel" x="40" y="78" width="20" height="14" rx="5" />
+      <circle className="creator-robot-body-light" cx="50" cy="85" r="3" />
+      <path className="creator-robot-leg creator-robot-leg-left" d="M41 101v8" />
+      <path className="creator-robot-leg creator-robot-leg-right" d="M59 101v8" />
+      <path className="creator-robot-foot" d="M34 111h13q0 5-6 5h-7q-3 0-3-2t3-3Zm19 0h13q3 1 3 3t-3 2h-7q-6 0-6-5Z" />
+      <ellipse className="creator-robot-shadow" cx="50" cy="118" rx="25" ry="2" />
+    </svg>
+  );
+}
+
+function CreatorCompanion({
+  active, idle, onCreate, onIdleChange,
+}: {
+  active: boolean;
+  idle: RobotExercise | null;
+  onCreate: () => void;
+  onIdleChange: (exercise: RobotExercise | null) => void;
+}) {
+  const [promptVisible, setPromptVisible] = useState(false);
+  const [dismissed, setDismissed] = useState(false);
+  const promptShown = useRef(false);
+
+  useEffect(() => {
+    if (!active || dismissed || promptShown.current) return;
+    let timer: number | undefined;
+    const clearTimer = () => {
+      if (timer !== undefined) window.clearTimeout(timer);
+      timer = undefined;
+    };
+    const schedule = () => {
+      if (promptShown.current || timer !== undefined || document.visibilityState !== "visible") return;
+      timer = window.setTimeout(() => {
+        timer = undefined;
+        promptShown.current = true;
+        setPromptVisible(true);
+      }, 18000);
+    };
+    const onVisibilityChange = () => {
+      if (document.visibilityState === "hidden") clearTimer();
+      else schedule();
+    };
+    const onPageHide = clearTimer;
+    const onPageShow = schedule;
+
+    schedule();
+    document.addEventListener("visibilitychange", onVisibilityChange);
+    window.addEventListener("pagehide", onPageHide);
+    window.addEventListener("pageshow", onPageShow);
+    return () => {
+      clearTimer();
+      document.removeEventListener("visibilitychange", onVisibilityChange);
+      window.removeEventListener("pagehide", onPageHide);
+      window.removeEventListener("pageshow", onPageShow);
+    };
+  }, [active, dismissed]);
+
+  useEffect(() => {
+    if (!active) {
+      onIdleChange(null);
+      return;
+    }
+
+    const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
+    let timer: number | undefined;
+    let previousExercise: RobotExercise | null = null;
+    let lastActivityReset = 0;
+    let currentExercise: RobotExercise | null = null;
+
+    const clearTimer = () => {
+      if (timer !== undefined) window.clearTimeout(timer);
+      timer = undefined;
+    };
+    const schedule = (delay = 5500 + Math.random() * 3500) => {
+      if (timer !== undefined || document.visibilityState !== "visible" || reducedMotion.matches) return;
+      timer = window.setTimeout(() => {
+        timer = undefined;
+        const choices = ROBOT_EXERCISES.filter((exercise) => exercise !== previousExercise);
+        currentExercise = choices[Math.floor(Math.random() * choices.length)];
+        previousExercise = currentExercise;
+        onIdleChange(currentExercise);
+        timer = window.setTimeout(() => {
+          timer = undefined;
+          currentExercise = null;
+          onIdleChange(null);
+          schedule();
+        }, 2100);
+      }, delay);
+    };
+    const resetAfterActivity = (event: Event) => {
+      const now = Date.now();
+      if (event.type === "pointermove" && now - lastActivityReset < 500) return;
+      lastActivityReset = now;
+      clearTimer();
+      if (currentExercise) {
+        currentExercise = null;
+        onIdleChange(null);
+      }
+      schedule(6500);
+    };
+    const pause = () => {
+      clearTimer();
+      currentExercise = null;
+      onIdleChange(null);
+    };
+    const onVisibilityChange = () => {
+      if (document.visibilityState === "hidden") pause();
+      else schedule();
+    };
+    const onMotionPreferenceChange = () => {
+      if (reducedMotion.matches) pause();
+      else schedule();
+    };
+    const activityEvents: Array<keyof WindowEventMap> = ["pointermove", "pointerdown", "wheel", "keydown", "click", "touchstart", "scroll"];
+
+    schedule();
+    activityEvents.forEach((event) => window.addEventListener(event, resetAfterActivity, { passive: true }));
+    document.addEventListener("visibilitychange", onVisibilityChange);
+    window.addEventListener("pagehide", pause);
+    window.addEventListener("pageshow", onVisibilityChange);
+    reducedMotion.addEventListener("change", onMotionPreferenceChange);
+    return () => {
+      clearTimer();
+      activityEvents.forEach((event) => window.removeEventListener(event, resetAfterActivity));
+      document.removeEventListener("visibilitychange", onVisibilityChange);
+      window.removeEventListener("pagehide", pause);
+      window.removeEventListener("pageshow", onVisibilityChange);
+      reducedMotion.removeEventListener("change", onMotionPreferenceChange);
+    };
+  }, [active, onIdleChange]);
+
+  useEffect(() => {
+    if (!active) return;
+    const moveEyes = (event: PointerEvent) => {
+      document.querySelectorAll<SVGSVGElement>(".creators-page .creator-robot").forEach((robot) => {
+        const bounds = robot.getBoundingClientRect();
+        if (!bounds.width || !bounds.height) return;
+        const horizontal = Math.max(-1, Math.min(1, (event.clientX - (bounds.left + bounds.width / 2)) / (bounds.width / 2)));
+        const vertical = Math.max(-1, Math.min(1, (event.clientY - (bounds.top + bounds.height / 2)) / (bounds.height / 2)));
+        robot.style.setProperty("--gaze-x", `${(horizontal * 2.2).toFixed(1)}px`);
+        robot.style.setProperty("--gaze-y", `${(vertical * 2.2).toFixed(1)}px`);
+        robot.style.setProperty("--head-tilt", `${(horizontal * 3).toFixed(1)}deg`);
+      });
+    };
+    window.addEventListener("pointermove", moveEyes, { passive: true });
+    return () => window.removeEventListener("pointermove", moveEyes);
+  }, [active]);
+
+  return (
+    <aside className={`creator-companion${promptVisible && !dismissed ? " has-prompt" : ""}`} aria-label="Game creation companion">
+      {promptVisible && !dismissed && (
+        <div className="creator-companion-bubble" aria-label="Game creation suggestion">
+          <button type="button" className="creator-companion-dismiss" aria-label="Dismiss game creation suggestion" onClick={() => setDismissed(true)}>
+            <span aria-hidden="true">×</span>
+          </button>
+          <p>Hmm… no game catching your eye? 👀 Why not make one?</p>
+          <button type="button" className="creator-companion-action" onClick={onCreate}>Create a game</button>
+        </div>
+      )}
+      <CreatorRobotArt idle={idle} className="creator-companion-robot" />
+    </aside>
+  );
+}
 
 function IndieCard({ game, fav }: { game: IndieGame; fav: FavProps }) {
   return (
@@ -261,10 +452,11 @@ export function CreatorsSection({ user, onSignIn }: { user: User | null; onSignI
 
 /** /creators: every game by independent creators, PER_PAGE at a time, with a search. */
 export function CreatorsPage({ user, onSignIn }: { user: User | null; onSignIn: () => void }) {
-  const { games, loaded } = useIndieGames(user);
+  const { games, loaded, loadError, refresh } = useIndieGames(user);
   const { startSubmit, popups } = useSubmitPopup(user, onSignIn);
   const favs = useFavorites(user);
   const fav: FavProps = { user, has: favs.has, toggle: favs.toggle, onSignIn };
+  const [robotIdle, setRobotIdle] = useState<RobotExercise | null>(null);
   const [q, setQ] = useState(queryFromUrl);
   const [page, setPage] = useState(pageFromUrl);
   useEffect(() => {
@@ -284,6 +476,7 @@ export function CreatorsPage({ user, onSignIn }: { user: User | null; onSignIn: 
     history.replaceState(null, "", urlFor("/creators", next));
   }
   const searching = q.trim() !== "";
+  const emptyLibrary = loaded && !loadError && games?.length === 0 && !searching;
   const found = (games ?? []).filter((g) => matches(q, g.name, g.by, g.description, hostOf(g.url)));
   const pages = Math.max(1, Math.ceil(found.length / PER_PAGE));
   const current = Math.min(page, pages); // a page past the end shows the last one
@@ -309,7 +502,7 @@ export function CreatorsPage({ user, onSignIn }: { user: User | null; onSignIn: 
       <div className="list-tools">
         <SearchBox value={q} onChange={search} label="Search independent games" placeholder="Search games or creators"
           suggestions={(games ?? []).flatMap((g) => [g.name, g.by])} />
-        {games && (
+        {loaded && games && !loadError && (
           <span className="count">
             {searching
               ? `${found.length} ${found.length === 1 ? "result" : "results"}`
@@ -319,16 +512,33 @@ export function CreatorsPage({ user, onSignIn }: { user: User | null; onSignIn: 
           </span>
         )}
       </div>
-      {games && games.length === 0 && (
-        <p className="empty">No games from independent creators yet. <button type="button" className="link" onClick={startSubmit}>Be the first to add yours.</button></p>
+      {loadError && (
+        <p className="empty creators-load-error" role="alert">
+          We couldn't load the games just now. <button type="button" className="link" onClick={refresh}>Try again</button>
+        </p>
       )}
-      {games && games.length > 0 && searching && found.length === 0 && (
+      {emptyLibrary && (
+        <section className="empty creators-empty">
+          <div className="creators-empty-copy">
+            <h2>This playground needs a first game!</h2>
+            <p>Got a little idea? Bring it to life and let everyone play.</p>
+            <button type="button" className="btn" onClick={startSubmit}>Create your first game</button>
+          </div>
+        </section>
+      )}
+      {!loadError && loaded && searching && found.length === 0 && (
         <p className="empty">No games match “{q.trim()}”. <button type="button" className="link" onClick={() => search("")}>Clear search</button></p>
       )}
-      <div className="grid" aria-busy={games === null}>
+      <div className="grid" aria-busy={games === null && !loadError}>
         {games === null ? <SkeletonCards count={8} /> : shown.map((g) => <IndieCard key={g.id} game={g} fav={fav} />)}
       </div>
       <Pagination page={current} pages={pages} onPage={goToPage} hrefFor={(n) => urlFor("/creators", q, n)} />
+      <CreatorCompanion
+        active={loaded && !loadError}
+        idle={robotIdle}
+        onCreate={startSubmit}
+        onIdleChange={setRobotIdle}
+      />
       {popups}
     </section>
   );

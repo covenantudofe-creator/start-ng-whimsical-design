@@ -78,10 +78,6 @@ type FavProps = { user: User | null; has: (key: string) => boolean; toggle: (key
 
 export type RobotExercise = "stretch" | "dance" | "hop" | "curious" | "wave" | "yawn" | "shuffle";
 const ROBOT_EXERCISES: RobotExercise[] = ["stretch", "dance", "hop", "curious", "wave", "yawn", "shuffle"];
-const COVENANT_PROMPT_SEEN = "startng:covenant-prompt-seen";
-
-
-
 export function CreatorCompanion({
   idle, onCreate, onIdleChange, placement = "fixed",
 }: {
@@ -94,44 +90,11 @@ export function CreatorCompanion({
   const [dismissed, setDismissed] = useState(false);
   const [motionPaused, setMotionPaused] = useState(false);
   const promptShown = useRef(false);
-
-  useEffect(() => {
-    if (dismissed || promptShown.current) return;
-    try {
-      if (sessionStorage.getItem(COVENANT_PROMPT_SEEN) === "true") return;
-    } catch { /* The prompt can still work when storage is unavailable. */ }
-    let timer: number | undefined;
-    const clearTimer = () => {
-      if (timer !== undefined) window.clearTimeout(timer);
-      timer = undefined;
-    };
-    const schedule = () => {
-      if (promptShown.current || timer !== undefined || document.visibilityState !== "visible") return;
-      timer = window.setTimeout(() => {
-        timer = undefined;
-        promptShown.current = true;
-        try { sessionStorage.setItem(COVENANT_PROMPT_SEEN, "true"); } catch { /* Ignore unavailable storage. */ }
-        setPromptVisible(true);
-      }, 18000);
-    };
-    const onVisibilityChange = () => {
-      if (document.visibilityState === "hidden") clearTimer();
-      else schedule();
-    };
-    const onPageHide = clearTimer;
-    const onPageShow = schedule;
-
-    schedule();
-    document.addEventListener("visibilitychange", onVisibilityChange);
-    window.addEventListener("pagehide", onPageHide);
-    window.addEventListener("pageshow", onPageShow);
-    return () => {
-      clearTimer();
-      document.removeEventListener("visibilitychange", onVisibilityChange);
-      window.removeEventListener("pagehide", onPageHide);
-      window.removeEventListener("pageshow", onPageShow);
-    };
-  }, [dismissed]);
+  const showPrompt = useCallback(() => {
+    if (promptShown.current) return;
+    promptShown.current = true;
+    setPromptVisible(true);
+  }, []);
 
   useEffect(() => {
     const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
@@ -212,6 +175,12 @@ export function CreatorCompanion({
 
   useEffect(() => {
     const moveEyes = (event: PointerEvent) => {
+      if (event.type === "pointermove" && event.pointerType === "mouse" && (event.movementX !== 0 || event.movementY !== 0)) {
+        showPrompt();
+      }
+      if (event.type === "pointerdown" && event.target instanceof Element && event.target.closest(".creator-companion-trigger")) {
+        showPrompt();
+      }
       document.querySelectorAll<SVGSVGElement>(".creator-companion .creator-robot").forEach((robot) => {
         const bounds = robot.getBoundingClientRect();
         if (!bounds.width || !bounds.height) return;
@@ -228,10 +197,10 @@ export function CreatorCompanion({
       window.removeEventListener("pointermove", moveEyes);
       window.removeEventListener("pointerdown", moveEyes);
     };
-  }, []);
+  }, [showPrompt]);
 
   const dismissPrompt = () => {
-    try { sessionStorage.setItem(COVENANT_PROMPT_SEEN, "true"); } catch { /* Ignore unavailable storage. */ }
+    promptShown.current = true;
     setDismissed(true);
   };
 
@@ -246,7 +215,9 @@ export function CreatorCompanion({
           <button type="button" className="creator-companion-action" onClick={onCreate}>Create a game</button>
         </div>
       )}
-      <CreatorRobotArt idle={idle} className={`creator-companion-robot${motionPaused ? " is-paused" : ""}`} />
+      <button type="button" className="creator-companion-trigger" aria-label="Meet Covenant" onFocus={showPrompt}>
+        <CreatorRobotArt idle={idle} className={`creator-companion-robot${motionPaused ? " is-paused" : ""}`} />
+      </button>
     </aside>
   );
 }

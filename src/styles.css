@@ -506,6 +506,8 @@ button.game-link:hover { background: none; }
 .creator-robot-shadow { fill: var(--dot); }
 .creator-companion { position: fixed; right: 20px; bottom: calc(86px + env(safe-area-inset-bottom, 0px)); z-index: 6; display: flex; align-items: flex-end; gap: 12px; width: auto; pointer-events: none; }
 .creator-companion.has-prompt { width: min(475px, calc(100vw - 40px)); }
+.creator-companion.is-inline { position: relative; inset: auto; z-index: 1; width: 100%; max-width: 960px; margin: 0 auto 16px; padding: 0 24px; box-sizing: border-box; justify-content: flex-end; }
+.creator-companion.is-inline.has-prompt { width: min(475px, 100%); margin-left: auto; }
 .creator-companion .creator-robot-motion { width: 104px; height: 125px; }
 .creator-companion-bubble { position: relative; flex: 1; min-width: 0; margin-bottom: 12px; padding: 16px; border: 1px solid var(--line); border-radius: 16px 16px 4px 16px; background: var(--card); box-shadow: 4px 4px 0 var(--lime); pointer-events: auto; animation: creator-companion-peek .32s ease-out both; }
 .creator-companion-bubble p { margin: 0 22px 12px 0; font-size: .95rem; line-height: 1.45; }

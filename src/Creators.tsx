@@ -76,17 +76,19 @@ function useIndieGames(user: User | null, limit?: number, sort: "newest" | "popu
 
 type FavProps = { user: User | null; has: (key: string) => boolean; toggle: (key: string) => void; onSignIn: () => void };
 
-type RobotExercise = "stretch" | "dance" | "hop" | "curious" | "wave" | "yawn" | "shuffle";
+export type RobotExercise = "stretch" | "dance" | "hop" | "curious" | "wave" | "yawn" | "shuffle";
 const ROBOT_EXERCISES: RobotExercise[] = ["stretch", "dance", "hop", "curious", "wave", "yawn", "shuffle"];
+const COVENANT_PROMPT_SEEN = "startng:covenant-prompt-seen";
 
 
 
-function CreatorCompanion({
-  idle, onCreate, onIdleChange,
+export function CreatorCompanion({
+  idle, onCreate, onIdleChange, placement = "fixed",
 }: {
   idle: RobotExercise | null;
   onCreate: () => void;
   onIdleChange: (exercise: RobotExercise | null) => void;
+  placement?: "fixed" | "inline";
 }) {
   const [promptVisible, setPromptVisible] = useState(false);
   const [dismissed, setDismissed] = useState(false);
@@ -95,6 +97,9 @@ function CreatorCompanion({
 
   useEffect(() => {
     if (dismissed || promptShown.current) return;
+    try {
+      if (sessionStorage.getItem(COVENANT_PROMPT_SEEN) === "true") return;
+    } catch { /* The prompt can still work when storage is unavailable. */ }
     let timer: number | undefined;
     const clearTimer = () => {
       if (timer !== undefined) window.clearTimeout(timer);
@@ -105,6 +110,7 @@ function CreatorCompanion({
       timer = window.setTimeout(() => {
         timer = undefined;
         promptShown.current = true;
+        try { sessionStorage.setItem(COVENANT_PROMPT_SEEN, "true"); } catch { /* Ignore unavailable storage. */ }
         setPromptVisible(true);
       }, 18000);
     };
@@ -206,7 +212,7 @@ function CreatorCompanion({
 
   useEffect(() => {
     const moveEyes = (event: PointerEvent) => {
-      document.querySelectorAll<SVGSVGElement>(".creators-page .creator-robot").forEach((robot) => {
+      document.querySelectorAll<SVGSVGElement>(".creator-companion .creator-robot").forEach((robot) => {
         const bounds = robot.getBoundingClientRect();
         if (!bounds.width || !bounds.height) return;
         const horizontal = Math.max(-1, Math.min(1, (event.clientX - (bounds.left + bounds.width / 2)) / (bounds.width / 2)));
@@ -224,14 +230,19 @@ function CreatorCompanion({
     };
   }, []);
 
+  const dismissPrompt = () => {
+    try { sessionStorage.setItem(COVENANT_PROMPT_SEEN, "true"); } catch { /* Ignore unavailable storage. */ }
+    setDismissed(true);
+  };
+
   return (
-    <aside className={`creator-companion${promptVisible && !dismissed ? " has-prompt" : ""}`} aria-label="Game creation companion">
+    <aside className={`creator-companion${placement === "inline" ? " is-inline" : ""}${promptVisible && !dismissed ? " has-prompt" : ""}`} aria-label="Covenant, game creation companion">
       {promptVisible && !dismissed && (
         <div className="creator-companion-bubble" aria-label="Game creation suggestion">
-          <button type="button" className="creator-companion-dismiss" aria-label="Dismiss game creation suggestion" onClick={() => setDismissed(true)}>
+          <button type="button" className="creator-companion-dismiss" aria-label="Dismiss game creation suggestion" onClick={dismissPrompt}>
             <span aria-hidden="true">×</span>
           </button>
-          <p>Not finding a game you like? Create your own!</p>
+          <p>Hi, I'm Covenant! Can't find a game you like? Create yours!</p>
           <button type="button" className="creator-companion-action" onClick={onCreate}>Create a game</button>
         </div>
       )}
@@ -371,7 +382,7 @@ function useSubmitPopup(user: User | null, onSignIn: () => void) {
     <SubmitGame user={user} onSignIn={() => { setSubmitting(false); onSignIn(); }} onClose={() => setSubmitting(false)}
       onAdded={(g) => { setSubmitting(false); location.assign(indiePath(g)); }} />
   );
-  return { startSubmit: () => setSubmitting(true), popups };
+  return { startSubmit: useCallback(() => setSubmitting(true), []), popups };
 }
 
 /** On the homepage, under "Games from the community": the banner and the newest 4. */
@@ -381,6 +392,11 @@ export function CreatorsSection({ user, onSignIn }: { user: User | null; onSignI
   const fav: FavProps = { user, has: favs.has, toggle: favs.toggle, onSignIn };
   const { games: top } = useIndieGames(user, 3, "popular"); // the banner: most clicked this week
   const { startSubmit, popups } = useSubmitPopup(user, onSignIn);
+  useEffect(() => {
+    const openSubmit = () => startSubmit();
+    window.addEventListener("startng:open-game-submit", openSubmit);
+    return () => window.removeEventListener("startng:open-game-submit", openSubmit);
+  }, [startSubmit]);
   return (
     <section id="creators" className="container creators">
       <div className="indie-banner">

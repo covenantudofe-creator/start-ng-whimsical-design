@@ -23,7 +23,7 @@ const CharacterCreator = lazy(() => import("./CharacterCreator"));
 const GameBoard = lazy(() => import("./GameBoard"));
 const UnlockPopup = lazy(() => import("./features/wardrobe/UnlockPopup"));
 import { Game, gameReturnUrl, HANGOUT, isInAppGame, playableUrl, toCard } from "./games";
-import { CreatorsPage, CreatorsSection } from "./Creators";
+import { CreatorsPage, CreatorsSection, CreatorCompanion, type RobotExercise } from "./Creators";
 import PageParts from "./features/PageParts";
 import { useFeature } from "./features/flags";
 import { LeaderboardPage, TournamentBanner, TournamentPage, useTournament } from "./Tournament";
@@ -80,6 +80,7 @@ export default function App({ view = "home", gameName, indieId, featurePage }: {
   const [signInOpen, setSignInOpen] = useState(!!returnTo || openSignIn);
   const [remember, setRemember] = useState(true); // "Keep me signed in" in the sign-in box (a year without a visit, instead of a week)
   const [menuOpen, setMenuOpen] = useState(false); // the Pages menu on small screens: a layer over the page, it moves nothing
+  const [robotIdle, setRobotIdle] = useState<RobotExercise | null>(null);
   useEffect(() => {
     if (!menuOpen) return;
     const close = (e: Event) => { if (e instanceof KeyboardEvent ? e.key === "Escape" : !(e.target as Element).closest("header.nav")) setMenuOpen(false); };
@@ -407,6 +408,15 @@ export default function App({ view = "home", gameName, indieId, featurePage }: {
             {!user && <button className="ghost" onClick={() => setSignInOpen(true)}>Create free account</button>}
           </div>
         </section>
+        )}
+
+        {view === "home" && (
+          <CreatorCompanion
+            idle={robotIdle}
+            placement="inline"
+            onCreate={() => window.dispatchEvent(new Event("startng:open-game-submit"))}
+            onIdleChange={setRobotIdle}
+          />
         )}
 
         {view === "home" && <TournamentBanner tournament={tournament.tournament} />}

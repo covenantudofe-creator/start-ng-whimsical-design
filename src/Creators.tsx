@@ -79,22 +79,31 @@ type FavProps = { user: User | null; has: (key: string) => boolean; toggle: (key
 export type RobotExercise = "stretch" | "dance" | "hop" | "curious" | "wave" | "yawn" | "shuffle";
 const ROBOT_EXERCISES: RobotExercise[] = ["stretch", "dance", "hop", "curious", "wave", "yawn", "shuffle"];
 export function CreatorCompanion({
-  idle, onCreate, onIdleChange, placement = "fixed",
+  idle, onCreate, onIdleChange, placement = "fixed", enabled = true, autoShow = false, message,
 }: {
   idle: RobotExercise | null;
   onCreate: () => void;
   onIdleChange: (exercise: RobotExercise | null) => void;
   placement?: "fixed" | "inline";
+  enabled?: boolean;
+  autoShow?: boolean;
+  message?: string;
 }) {
   const [promptVisible, setPromptVisible] = useState(false);
   const [dismissed, setDismissed] = useState(false);
   const [motionPaused, setMotionPaused] = useState(false);
   const promptShown = useRef(false);
+  const sessionPromptKey = "startng:home-covenant-prompt-shown";
   const showPrompt = useCallback(() => {
-    if (promptShown.current) return;
+    if (!enabled || promptShown.current || (autoShow && sessionStorage.getItem(sessionPromptKey))) return;
     promptShown.current = true;
+    if (autoShow) sessionStorage.setItem(sessionPromptKey, "1");
     setPromptVisible(true);
-  }, []);
+  }, [enabled, autoShow]);
+
+  useEffect(() => {
+    if (enabled && autoShow && !sessionStorage.getItem(sessionPromptKey)) showPrompt();
+  }, [enabled, autoShow, showPrompt]);
 
   useEffect(() => {
     const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
@@ -175,9 +184,6 @@ export function CreatorCompanion({
 
   useEffect(() => {
     const moveEyes = (event: PointerEvent) => {
-      if (event.type === "pointermove" && event.pointerType === "mouse" && (event.movementX !== 0 || event.movementY !== 0)) {
-        showPrompt();
-      }
       if (event.type === "pointerdown" && event.target instanceof Element && event.target.closest(".creator-companion-trigger")) {
         showPrompt();
       }
@@ -191,9 +197,11 @@ export function CreatorCompanion({
         robot.style.setProperty("--head-tilt", `${(horizontal * 3).toFixed(1)}deg`);
       });
     };
+    window.addEventListener("mousemove", showPrompt, { passive: true });
     window.addEventListener("pointermove", moveEyes, { passive: true });
     window.addEventListener("pointerdown", moveEyes, { passive: true });
     return () => {
+      window.removeEventListener("mousemove", showPrompt);
       window.removeEventListener("pointermove", moveEyes);
       window.removeEventListener("pointerdown", moveEyes);
     };
@@ -211,7 +219,7 @@ export function CreatorCompanion({
           <button type="button" className="creator-companion-dismiss" aria-label="Dismiss game creation suggestion" onClick={dismissPrompt}>
             <span aria-hidden="true">×</span>
           </button>
-          <p>Hi, I'm Covenant! Can't find a game you like? Create yours!</p>
+          <p>{message ?? "Hi, I'm Covenant! Can't find a game you like? Create yours!"}</p>
           <button type="button" className="creator-companion-action" onClick={onCreate}>Create a game</button>
         </div>
       )}

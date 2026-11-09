@@ -414,6 +414,8 @@ export default function App({ view = "home", gameName, indieId, featurePage }: {
           <CreatorCompanion
             idle={robotIdle}
             placement="inline"
+            autoShow
+            message="Not finding a game that you like? Create yours!"
             onCreate={() => window.dispatchEvent(new Event("startng:open-game-submit"))}
             onIdleChange={setRobotIdle}
           />
